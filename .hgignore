@@ -1,0 +1,10 @@
+#~ Project ignores
+syntax: glob 
+
+syntax: regexp 
+
+#~ General ignore configurations
+syntax: glob 
+*.py[co]
+*.orig
+
