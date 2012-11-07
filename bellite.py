@@ -1,12 +1,12 @@
 import os, sys, socket, json
+from functools import partial
 import asyncore
 
 class BelliteJsonRpcApi(object):
     def __init__(self, cred=None):
         cred = self.findCredentials(cred)
         if cred is not None:
-            self._connect(cred['host'], cred['port'])
-            self.auth(cred['token'])
+            self._connect(cred)
 
     def auth(self, token):
         return self._invoke('auth', [token])
@@ -20,7 +20,7 @@ class BelliteJsonRpcApi(object):
         if args and kw: raise ValueError("Cannot specify both positional and keyword arguments")
         if len(args)==1 and isinstance(args[0], (list, dict, tuple)):
             args = args[0]
-        return self._invoke('perform', [selfId or 0, cmd, kw or args])
+        return self._invoke('perform', [selfId or 0, cmd, kw or args or None])
     def bindEvent(self, selfId=0, evtType='*', res=-1, ctx=None):
         return self._invoke('bindEvent', [selfId or 0, evtType, res, ctx])
     def unbindEvent(self, selfId=0, evtType=None):
@@ -43,11 +43,13 @@ class BelliteJsonRpcApi(object):
     def _invoke(self, method, params=()):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class BelliteJsonRpc(BelliteJsonRpcApi):
     def __init__(self, cred=None):
         self._resultMap = {}
+        self._evtTypeMap = {}
         BelliteJsonRpcApi.__init__(self, cred)
 
     def _notify(self, method, params=()):
@@ -56,11 +58,13 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
     def _invoke(self, method, params=()):
         msgId = self._nextMsgId
         self._nextMsgId = msgId + 1
-        self._resultMap[msgId] = self._newResult(msgId)
+        res = self._newResult(msgId)
         self._sendJsonRpc(method, params, msgId)
-        return self._resultMap[msgId]
+        return res.promise
     def _newResult(self, msgId):
-        return None
+        res = deferred()
+        self._resultMap[msgId] = res
+        return res
     def _sendJsonRpc(self, method, params=(), msgId=None):
         msg = dict(jsonrpc="2.0", method=method, params=params)
         if msgId is not None: msg['id'] = msgId
@@ -73,7 +77,7 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
             try:
                 msg = json.loads(msg)
                 isCall = 'method' in msg
-            except ValueError as err:
+            except ValueError:
                 continue
             try:
                 if isCall: self.on_rpc_call(msg)
@@ -81,27 +85,53 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
             except Exception:
                 sys.excepthook(*sys.exc_info())
     def on_rpc_call(self, msg):
-        if msg.method == 'event':
+        if msg.get('method') == 'event':
             args = msg['params']
             self.emit(args['evtType'], args)
     def on_rpc_response(self, msg):
         tgt = self._resultMap.pop(msg['id'], None)
         if tgt is None: return
         if 'error' in msg:
-            tgt.resolve(msg['error'])
-        else: tgt.reject(msg.get('result'))
+            tgt.reject(msg['error'])
+        else: tgt.resolve(msg.get('result'))
+
+    def on_connect(self, cred):
+        self.auth(cred['token']).then(
+            self.on_auth_succeeded, self.on_auth_failed)
+    def on_auth_succeeded(self, msg):
+        self.emit('auth', True, msg)
+        self.emit('ready')
+    def on_auth_failed(self, msg):
+        self.emit('auth', False, msg)
+
+    #~ micro event implementation ~~~~~~~~~~~~~~~~~~~~~~~
+
+    def ready(self, fnReady):
+        return self.on('ready', fnReady)
+    def on(self, key, fn=None):
+        def bindEvent(fn):
+            self._evtTypeMap.setdefault(key, []).append(fn)
+            return fn
+        if fn is None: return bindEvent
+        else: return bindEvent(fn)
+    def emit(self, key, *args, **kw):
+        for fn in self._evtTypeMap.get(key, ()):
+            try: fn(self, *args, **kw)
+            except Exception:
+                sys.excepthook(*sys.exc_info())
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-class BelliteIPC(BelliteJsonRpc):
+class Bellite(BelliteJsonRpc):
     timeout_conn = 0.5
     timeout_send = 0.01
     timeout_recv = 1e-6
     conn = None
     _buf = ''
 
-    def _connect(self, host, port):
-        self.conn = socket.create_connection((host, port), self.timeout_conn)
+    def _connect(self, cred):
+        self.conn = socket.create_connection((cred['host'], cred['port']), self.timeout_conn)
+        if self.conn: self.on_connect(cred)
 
     def addAsyncMap(self, map=None):
         if map is None:
@@ -151,4 +181,68 @@ class BelliteIPC(BelliteJsonRpc):
     def handle_expt_event(self): self.close()
     def handle_close(self): self.close()
     def handle_error(self): sys.excepthook(*sys.exc_info())
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~ Fate promise/future (micro) implementation
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+class PromiseApi(object):
+    def always(self, fn): return self.then(fn, fn)
+    def fail(self, failure): return self.then(None, failure)
+    def done(self, success): return self.then(success, None)
+
+class Promise(PromiseApi):
+    def __init__(self, then):
+        if then is not None: self.then = then
+    promise = property(lambda self: self)
+
+class Future(PromiseApi):
+    def __init__(self, then, resolve=None, reject=None):
+        self.promise = Promise(then)
+        if resolve is not None: self.resolve = resolve
+        if reject is not None: self.reject = reject
+    then = property(lambda self: self.promise.then)
+    def resolve(self, result=None): pass
+    def reject(self, error=None): pass
+
+def deferred():
+    cb = []; answer = None
+    def then(success=None, failure=None):
+        cb.append((success, failure))
+        if answer is not None: answer()
+        return self.promise
+    def resolve(result):
+        while cb:
+            success, failure = cb.pop()
+            try:
+                if success is not None:
+                    res = success(result)
+                    if res is not None:
+                        result = res
+            except Exception as err:
+                if failure is not None:
+                    res = failure(err)
+                elif not cb:
+                    sys.excepthook(*sys.exc_info())
+                if res is None:
+                    return reject(err)
+                else: return reject(res)
+        answer = partial(resolve, result)
+    def reject(error):
+        while cb:
+            failure = cb.pop()[1]
+            try:
+                if failure is not None:
+                    res = failure(error)
+                    if res is not None:
+                        error = res
+            except Exception as err:
+                res = err
+                if not cb:
+                    sys.excepthook(*sys.exc_info())
+        answer = partial(reject, error)
+
+    self = Future(then, resolve, reject)
+    return self
+
 
