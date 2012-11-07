@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*- vim: set ts=4 sw=4 expandtab
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+##~ Copyright (C) 2002-2012 Bellite.io                            ##
+##~                                                               ##
+##~ This library is free software; you can redistribute it        ##
+##~ and/or modify it under the terms of the MIT style License as  ##
+##~ found in the LICENSE file included with this distribution.    ##
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
 import os, sys, socket, json
 from functools import partial
 import asyncore
