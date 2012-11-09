@@ -56,10 +56,13 @@ class BelliteJsonRpcApi(object):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class BelliteJsonRpc(BelliteJsonRpcApi):
-    def __init__(self, cred=None):
+    def __init__(self, cred=None, logging=False):
         self._resultMap = {}
         self._evtTypeMap = {}
         BelliteJsonRpcApi.__init__(self, cred)
+        if logging:
+            self.logSend = self._logSend
+            self.logRecv = self._logRecv
 
     def _notify(self, method, params=()):
         return self._sendJsonRpc(method, params)
@@ -77,9 +80,15 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
     def _sendJsonRpc(self, method, params=(), msgId=None):
         msg = dict(jsonrpc="2.0", method=method, params=params)
         if msgId is not None: msg['id'] = msgId
+        self.logSend(msg)
         return self._sendMessage(json.dumps(msg))
     def _sendMessage(self, msg):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
+
+    def logSend(self, msg): pass
+    def _logSend(self, msg): print 'send ==> ', json.dumps(msg)
+    def logRecv(self, msg): pass
+    def _logRecv(self, msg): print 'recv <== ', json.dumps(msg)
 
     def _recvJsonRpc(self, msgList):
         for msg in msgList:
@@ -88,6 +97,7 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
                 isCall = 'method' in msg
             except ValueError:
                 continue
+            self.logRecv(msg)
             try:
                 if isCall: self.on_rpc_call(msg)
                 else: self.on_rpc_response(msg)
