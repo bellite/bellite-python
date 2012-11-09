@@ -200,26 +200,26 @@ testBelliteServer({
     try {
         assert.equal(err, null, "terminated with an error")
 
-        assert.equal(log.connect.length, 1, "should connect exactly once")
+        assert.equal(log.connect && log.connect.length, 1, "should connect exactly once")
         assert.equal(log.server_error, null, "should not experience server errors")
         assert.equal(log.conn_error, null, "should not experience connection errors")
 
         assert.equal(log.parse_error, null, "should not experience JSON parsing errors")
         assert.equal(log.response, null, "should not receive JSON-RPC 2.0 responses")
 
-        assert.equal(log.meth_auth.length, 1, "should call auth exactly once")
+        assert.equal(log.meth_auth && log.meth_auth.length, 1, "should call auth exactly once")
         assert.deepEqual(log.authorize, [true], "should authorize successfully")
 
         assert.equal(log.meth_unknown, null, "should never call an unknown method")
 
         assert(log.meth_ping, [0], "should call ping once with no args")
         assert(log.meth_version, [0], "should call version once with no args")
-        assert.equal(log.meth_perform.length, 3, "should call perform 3 times")
-        assert.equal(log.meth_bindEvent.length, 2, "should call bindEvent 3 times")
-        assert.equal(log.meth_unbindEvent.length, 1, "should call unbindEvent 2 times")
+        assert.equal(log.meth_perform && log.meth_perform.length, 3, "should call perform 3 times")
+        assert.equal(log.meth_bindEvent && log.meth_bindEvent.length, 2, "should call bindEvent 3 times")
+        assert.equal(log.meth_unbindEvent && log.meth_unbindEvent.length, 1, "should call unbindEvent 2 times")
 
         assert.deepEqual(log.cmd_testEvent, [[0, 'testEvent', null]], "should call testEvent")
-        assert.equal(log.dynamic_response.length, 1, "should call dynamic_response from event")
+        assert.equal(log.dynamic_response && log.dynamic_response.length, 1, "should call dynamic_response from event")
 
         console.log("All Bellite JSON-RPC protocol tests passed")
         process.exit(0) // success
