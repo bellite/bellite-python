@@ -37,7 +37,10 @@ class BelliteJsonRpcApi(object):
 
     def findCredentials(self, cred=None):
         if cred is None:
-            cred = os.environ.get('BELLITE_SERVER', '')
+            cred = os.environ.get('BELLITE_SERVER')
+            if not cred:
+                cred = '127.0.0.1:3099/bellite-demo-host';
+                print >>sys.stderr, 'BELLITE_SERVER environment variable not found, using "'+cred+'"'
         elif not isinstance(cred, basestring):
             return cred
         try:
