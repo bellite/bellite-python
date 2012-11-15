@@ -11,7 +11,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, '../..')))
 
 import bellite
-app = bellite.Bellite(logging=True)
+app = bellite.Bellite()
 
 @app.ready
 def appReady(app):
