@@ -13,9 +13,7 @@ import asyncore
 
 class BelliteJsonRpcApi(object):
     def __init__(self, cred=None):
-        cred = self.findCredentials(cred)
-        if cred is not None:
-            self._connect(cred)
+        self.connect(cred)
 
     def auth(self, token):
         return self._invoke('auth', [token])
@@ -50,7 +48,15 @@ class BelliteJsonRpcApi(object):
         except ValueError:
             return None
 
-    def _connect(self, host, port):
+    def connect(self, cred):
+        cred = self.findCredentials(cred)
+        if cred is not None:
+            f_ready = deferred()
+            self.ready = f_ready.promise
+            self._connect(cred, f_ready)
+            return self.ready
+
+    def _connect(self, cred, f_ready):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
     def _invoke(self, method, params=()):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
@@ -117,9 +123,10 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
             tgt.reject(msg['error'])
         else: tgt.resolve(msg.get('result'))
 
-    def on_connect(self, cred):
-        self.auth(cred['token']).then(
-            self.on_auth_succeeded, self.on_auth_failed)
+    def on_connect(self, cred, f_ready):
+        self.auth(cred['token']) \
+            .then(f_ready.resolve, f_ready.reject) \
+            .then(self.on_auth_succeeded, self.on_auth_failed)
     def on_auth_succeeded(self, msg):
         self.emit('auth', True, msg)
         self.emit('ready')
@@ -128,8 +135,6 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
 
     #~ micro event implementation ~~~~~~~~~~~~~~~~~~~~~~~
 
-    def ready(self, fnReady):
-        return self.on('ready', fnReady)
     def on(self, key, fn=None):
         def bindEvent(fn):
             self._evtTypeMap.setdefault(key, []).append(fn)
@@ -151,9 +156,9 @@ class Bellite(BelliteJsonRpc):
     conn = None
     _buf = ''
 
-    def _connect(self, cred):
+    def _connect(self, cred, f_ready):
         self.conn = socket.create_connection((cred['host'], cred['port']), self.timeout_conn)
-        if self.conn: self.on_connect(cred)
+        if self.conn: self.on_connect(cred, f_ready)
 
     def addAsyncMap(self, map=None):
         if map is None:
