@@ -202,8 +202,6 @@ exports.testBelliteJSONRPC = testBelliteJSONRPC;
 function assetTestResults(err, log, opt) {
     var assert=require('assert');
     try {
-        assert.equal(err, null, "terminated with an error")
-
         assert.equal(log.connect && log.connect.length, 1, "should connect exactly once")
         assert.equal(log.server_error, null, "should not experience server errors")
         assert.equal(log.conn_error, null, "should not experience connection errors")
@@ -224,6 +222,8 @@ function assetTestResults(err, log, opt) {
 
         assert.deepEqual(log.cmd_testEvent, [[0, 'testEvent', null]], "should call testEvent")
         assert.equal(log.dynamic_response && log.dynamic_response.length, 1, "should call dynamic_response from event")
+
+        assert.equal(err, null, "terminated with an error")
 
         console.log("All Bellite JSON-RPC protocol tests passed")
         process.exit(0) // success
