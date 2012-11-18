@@ -177,16 +177,22 @@ function testBelliteJSONRPC(opt, doneCallback) {
     })
 
     function spawnClient(exec, args) {
-        var cp = require('child_process'),
-            proc = cp.spawn(exec, args, {stdio:'inherit'})
-        proc.on('exit', function(code, signal) {
+        var cp = require('child_process')
+        test.proc = cp.spawn(exec, args, {stdio:'inherit'})
+        test.proc.on('exit', function(code, signal) {
             log('process_exit', code, signal)
+            test.proc = false;
             done(code!==0 ? 'subprocess spawning error' : null) })
-        return proc }
+        return test.proc }
 
     function done(err) {
         if (done.timer)
-            clearTimeout(done.timer);
+            clearTimeout(done.timer)
+
+        if (test.proc) {
+            test.proc.kill()
+            test.proc = null
+        }
         if (test.shutdownTest) {
             test.shutdownTest()
             setTimeout(function() { doneCallback(err, opt.log, opt) }, 100)
