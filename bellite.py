@@ -68,10 +68,10 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
     def __init__(self, cred=None, logging=False):
         self._resultMap = {}
         self._evtTypeMap = {}
-        BelliteJsonRpcApi.__init__(self, cred)
         if logging:
             self.logSend = self._logSend
             self.logRecv = self._logRecv
+        BelliteJsonRpcApi.__init__(self, cred)
 
     def _notify(self, method, params=()):
         return self._sendJsonRpc(method, params)
@@ -124,6 +124,7 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
         else: tgt.resolve(msg.get('result'))
 
     def on_connect(self, cred, f_ready):
+        self.emit('connect')
         self.auth(cred['token']) \
             .then(f_ready.resolve, f_ready.reject) \
             .then(self.on_auth_succeeded, self.on_auth_failed)
@@ -180,6 +181,7 @@ class Bellite(BelliteJsonRpc):
         if conn is None: return False
         try: conn.shutdown(socket.SHUT_RDWR)
         except socket.error: pass
+        self.emit('close')
         return True
 
     # asyncore compatible api
