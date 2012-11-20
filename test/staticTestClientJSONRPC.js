@@ -11,6 +11,7 @@
 var test = require('./testClientJSONRPC.js');
 
 test.testBelliteJSONRPC({
+    debugLog: console.log,
     timeout: false,
     port: 3099,
     token: 'bellite-demo-host',
