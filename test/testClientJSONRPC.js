@@ -220,8 +220,8 @@ function assetTestResults(err, log, opt) {
 
         assert.equal(log.meth_unknown, null, "should never call an unknown method")
 
-        assert(log.meth_ping, [0], "should call ping once with no args")
-        assert(log.meth_version, [0], "should call version once with no args")
+        assert.equal(log.meth_ping, [0], "should call ping once with no args")
+        assert.equal(log.meth_version, [0], "should call version once with no args")
         assert.equal(log.meth_perform && log.meth_perform.length, 3, "should call perform 3 times")
         assert.equal(log.meth_bindEvent && log.meth_bindEvent.length, 2, "should call bindEvent 3 times")
         assert.equal(log.meth_unbindEvent && log.meth_unbindEvent.length, 1, "should call unbindEvent 2 times")
