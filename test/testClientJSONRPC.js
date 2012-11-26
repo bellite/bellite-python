@@ -178,7 +178,7 @@ function testBelliteJSONRPC(opt, doneCallback) {
 
     function spawnClient(exec, args) {
         var cp = require('child_process')
-        test.proc = cp.spawn(exec, args, {stdio:'inherit'})
+        test.proc = cp.spawn(exec, args, {stdio:'inherit',cwd:__dirname})
         test.proc.on('exit', function(code, signal) {
             log('process_exit', code, signal)
             test.proc = false;
