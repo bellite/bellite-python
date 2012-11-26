@@ -27,7 +27,8 @@ class BelliteJsonRpcApi(object):
         if args and kw: raise ValueError("Cannot specify both positional and keyword arguments")
         if len(args)==1 and isinstance(args[0], (list, dict, tuple)):
             args = args[0]
-        return self._invoke('perform', [selfId or 0, cmd, kw or args or None])
+        elif not args: args = None
+        return self._invoke('perform', [selfId or 0, cmd, kw or args])
     def bindEvent(self, selfId=0, evtType='*', res=-1, ctx=None):
         return self._invoke('bindEvent', [selfId or 0, evtType, res, ctx])
     def unbindEvent(self, selfId=0, evtType=None):
@@ -58,7 +59,7 @@ class BelliteJsonRpcApi(object):
 
     def _connect(self, cred, f_ready):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
-    def _invoke(self, method, params=()):
+    def _invoke(self, method, params=None):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
 
 
@@ -73,10 +74,10 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
             self.logRecv = self._logRecv
         BelliteJsonRpcApi.__init__(self, cred)
 
-    def _notify(self, method, params=()):
+    def _notify(self, method, params=None):
         return self._sendJsonRpc(method, params)
     _nextMsgId = 100
-    def _invoke(self, method, params=()):
+    def _invoke(self, method, params=None):
         msgId = self._nextMsgId
         self._nextMsgId = msgId + 1
         res = self._newResult(msgId)
@@ -86,8 +87,9 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
         res = deferred()
         self._resultMap[msgId] = res
         return res
-    def _sendJsonRpc(self, method, params=(), msgId=None):
-        msg = dict(jsonrpc="2.0", method=method, params=params)
+    def _sendJsonRpc(self, method, params=None, msgId=None):
+        msg = dict(jsonrpc="2.0", method=method)
+        if params is not None: msg['params'] = params
         if msgId is not None: msg['id'] = msgId
         self.logSend(msg)
         return self._sendMessage(json.dumps(msg))
