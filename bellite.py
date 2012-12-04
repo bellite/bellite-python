@@ -69,9 +69,7 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
     def __init__(self, cred=None, logging=False):
         self._resultMap = {}
         self._evtTypeMap = {}
-        if logging:
-            self.logSend = self._logSend
-            self.logRecv = self._logRecv
+        self._logging = bool(logging)
         BelliteJsonRpcApi.__init__(self, cred)
 
     def _notify(self, method, params=None):
@@ -96,10 +94,12 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
     def _sendMessage(self, msg):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
 
-    def logSend(self, msg): pass
-    def _logSend(self, msg): print 'send ==> ', json.dumps(msg)
-    def logRecv(self, msg): pass
-    def _logRecv(self, msg): print 'recv <== ', json.dumps(msg)
+    def logSend(self, msg):
+        if self._logging:
+            print 'send ==> ', json.dumps(msg)
+    def logRecv(self, msg):
+        if self._logging:
+            print 'recv <== ', json.dumps(msg)
 
     def _recvJsonRpc(self, msgList):
         for msg in msgList:
