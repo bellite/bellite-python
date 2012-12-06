@@ -9,7 +9,7 @@
 
 from distutils.core import setup
 
-__version__ = '1.4.3'
+__version__ = '1.4.11'
 
 setup(
     name='bellite', 
