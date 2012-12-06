@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(__file__, '../..')))
 import bellite
 app = bellite.Bellite()
 
-@app.on('ready')
-def appReady(app):
+@app.ready.done
+def appReady(ans_auth=None):
     app.ping()
     app.version()
     app.perform(142, "echo", {"name":[None, True, 42, "value"]})
