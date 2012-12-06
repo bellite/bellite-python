@@ -79,7 +79,8 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
         msgId = self._nextMsgId
         self._nextMsgId = msgId + 1
         res = self._newResult(msgId)
-        self._sendJsonRpc(method, params, msgId)
+        if not self._sendJsonRpc(method, params, msgId):
+            res.reject(Exception('Bellite client not connected'))
         return res.promise
     def _newResult(self, msgId):
         res = deferred()
@@ -123,7 +124,10 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
         if tgt is None: return
         if 'error' in msg:
             tgt.reject(msg['error'])
-        else: tgt.resolve(msg.get('result'))
+        elif msg['result'][0]:
+            tgt.reject(msg['result'])
+        else:
+            tgt.resolve(msg.get('result'))
 
     def on_connect(self, cred, f_ready):
         self.emit('connect')
