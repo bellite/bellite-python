@@ -148,9 +148,15 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
             return fn
         if fn is None: return bindEvent
         else: return bindEvent(fn)
-    def emit(self, key, *args, **kw):
+    def emit(self, key, arg=NotImplemented, extra=NotImplemented):
         for fn in self._evtTypeMap.get(key, ()):
-            try: fn(self, *args, **kw)
+            try:
+                if arg is NotImplemented:
+                    fn(self)
+                elif extra is NotImplemented:
+                    fn(self, arg)
+                else:
+                    fn(self, arg, extra)
             except Exception:
                 sys.excepthook(*sys.exc_info())
 
