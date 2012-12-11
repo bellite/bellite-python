@@ -8,6 +8,7 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
 
 import os, sys, socket, json
+from collections import OrderedDict
 from functools import partial
 import asyncore
 
@@ -86,12 +87,13 @@ class BelliteJsonRpc(BelliteJsonRpcApi):
         res = deferred()
         self._resultMap[msgId] = res
         return res
-    def _sendJsonRpc(self, method, params=None, msgId=None):
-        msg = dict(jsonrpc="2.0", method=method)
-        if params is not None: msg['params'] = params
+    def _sendJsonRpc(self, method, params=None, msgId=None, separators=(',',':')):
+        msg = OrderedDict(jsonrpc="2.0")
         if msgId is not None: msg['id'] = msgId
+        msg['method'] = method
+        if params is not None: msg['params'] = params
         self.logSend(msg)
-        return self._sendMessage(json.dumps(msg))
+        return self._sendMessage(json.dumps(msg,separators=separators))
     def _sendMessage(self, msg):
         raise NotImplementedError('Subclass Responsibility: %r' % (self,))
 
