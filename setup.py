@@ -9,7 +9,7 @@
 
 from distutils.core import setup
 
-__version__ = '1.4.11'
+__version__ = '1.4.17'
 
 setup(
     name='bellite', 
@@ -18,7 +18,7 @@ setup(
     author='Shane Holloway',
     author_email='shane@bellite.io',
     description='Deliver desktop applications on Mac OSX and Windows XP/7/8 using Bellite.io.',
-    url='http://bellite.io/info/python-pkg',
+    url='https://github.com/bellite/bellite-python',
     download_url='https://github.com/bellite/bellite-python.git',
     platforms=['win32', 'darwin', 'osx'],
     py_modules=['bellite'],
