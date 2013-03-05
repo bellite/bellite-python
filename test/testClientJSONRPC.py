@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*- vim: set ts=4 sw=4 expandtab
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
-##~ Copyright (C) 2002-2012 Bellite.io                            ##
+##~ Copyright (C) 2002-2013 Bellite.io                            ##
 ##~                                                               ##
 ##~ This library is free software; you can redistribute it        ##
 ##~ and/or modify it under the terms of the MIT style License as  ##
